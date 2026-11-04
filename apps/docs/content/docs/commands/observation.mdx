@@ -30,7 +30,7 @@ agent-desktop snapshot [--app NAME] [--window-id ID] [-i] [--compact] [--skeleto
     <tr><td><code>--include-bounds</code></td><td>off</td><td>Add <code>bounds</code> to each node.</td></tr>
     <tr><td><code>--skeleton</code></td><td>off</td><td>Clamp depth to 3 and mark cut containers with <code>children_count</code>. See <a href="/desktop/skeleton-and-drill-down#take-a-skeleton">Take a skeleton</a>.</td></tr>
     <tr><td><code>--root REF</code></td><td>none</td><td>Drill into one ref's subtree and replace that region's refs. Cannot combine with <code>--surface</code> or <code>--wait-for</code>. See <a href="/desktop/skeleton-and-drill-down#drill-into-a-region">Drill into a region</a>.</td></tr>
-    <tr><td><code>--max-depth N</code></td><td><code>10</code></td><td>Maximum depth, up to 50. See <a href="/desktop/skeleton-and-drill-down#depth-with-max-depth">Depth with max-depth</a>.</td></tr>
+    <tr><td><code>--max-depth N</code></td><td><code>10</code></td><td>Maximum depth, up to 128. See <a href="/desktop/skeleton-and-drill-down#depth-with-max-depth">Depth with max-depth</a>.</td></tr>
     <tr><td><code>--timeout-ms MS</code></td><td><code>3000</code></td><td>Observation deadline. A full snapshot that runs out succeeds with <code>complete: false</code>. See <a href="/desktop/skeleton-and-drill-down#partial-observations">Partial observations</a>.</td></tr>
     <tr><td><code>--surface KIND</code></td><td><code>window</code></td><td>Read an overlay instead of the window. See <a href="/desktop/surfaces#surface-kinds">Surface kinds</a>.</td></tr>
     <tr><td><code>--force-electron-a11y</code></td><td>off</td><td>Assume Chromium renderer accessibility is already forced, which skips the activation guidance.</td></tr>
@@ -39,7 +39,7 @@ agent-desktop snapshot [--app NAME] [--window-id ID] [-i] [--compact] [--skeleto
 
 `data` carries `app`, `window` (left out when macOS reads a windowless app through its process, see [Surfaces](/desktop/surfaces)), `snapshot_id`, `ref_count`, `complete`, and `tree`; [Snapshots and refs](/desktop/snapshots-and-refs) shows a full example. With a post-action `--wait-for` ([Configuration](/desktop/configuration#post-action-wait-flags)), the result adds `elapsed_ms` and `matched_selector`.
 
-Errors specific to `snapshot`: `INVALID_ARGS` for `--root` with `--surface` or `--wait-for`, a bare ref, or `--max-depth` above 50; `WINDOW_NOT_FOUND` when there is no window to read; `AMBIGUOUS_TARGET` when the app has several candidate windows; `INVALID_ARGS` for a `--surface` kind this OS does not have; `STALE_REF`, `SNAPSHOT_NOT_FOUND`, or `TIMEOUT` for a `--root` drill. See [What a drill refuses](/desktop/skeleton-and-drill-down#what-a-drill-refuses).
+Errors specific to `snapshot`: `INVALID_ARGS` for `--root` with `--surface` or `--wait-for`, a bare ref, or `--max-depth` above 128; `WINDOW_NOT_FOUND` when there is no window to read; `AMBIGUOUS_TARGET` when the app has several candidate windows; `INVALID_ARGS` for a `--surface` kind this OS does not have; `STALE_REF`, `SNAPSHOT_NOT_FOUND`, or `TIMEOUT` for a `--root` drill. See [What a drill refuses](/desktop/skeleton-and-drill-down#what-a-drill-refuses).
 
 Platform limits: supported surfaces and Chromium settle time differ by OS. See [macOS](/desktop/platforms/macos), [Windows](/desktop/platforms/windows), and [Linux](/desktop/platforms/linux).
 
@@ -110,7 +110,7 @@ When a `--role` filter matches nothing, `roles_present` lists the roles in the s
 Reads one property of a ref.
 
 ```bash
-agent-desktop get <REF> [--property text|value|title|bounds|role|states]
+agent-desktop get <REF> [--property text|value|title|bounds|role|states] [--timeout-ms MS]
 ```
 
 <table>
@@ -120,6 +120,7 @@ agent-desktop get <REF> [--property text|value|title|bounds|role|states]
   <tbody>
     <tr><td><code>REF</code></td><td>required</td><td>Qualified ref.</td></tr>
     <tr><td><code>--property</code></td><td><code>text</code></td><td><code>text</code> is what a person reads: the value for <code>textfield</code>, <code>combobox</code>, <code>listbox</code>, <code>datefield</code>, and <code>timefield</code>, and the name for every other role, each falling back to the other. <code>value</code> is the raw value. <code>title</code> is the accessible name. <code>bounds</code>, <code>role</code>, and <code>states</code> are as named.</td></tr>
+    <tr><td><code>--timeout-ms MS</code></td><td><code>5000</code> per stage</td><td>When supplied, one shared deadline for ref resolution and the property read. Raise it for a large window. Without the flag, each stage retains its own default deadline.</td></tr>
   </tbody>
 </table>
 
@@ -134,14 +135,16 @@ agent-desktop get <REF> [--property text|value|title|bounds|role|states]
 
 `text`, `value`, `bounds`, and `states` read live state when the adapter can and fall back to the snapshot's saved values otherwise; a missing value is `null`. Only `bounds` reports whether it was live, in `data.live`. When `live` is `false`, the rectangle came from the snapshot and may be out of date, so check it before you pass bounds to `mouse-click`.
 
-Errors specific to `get`: `INVALID_ARGS` for a bare ref or an unknown property, and the ref errors `SNAPSHOT_NOT_FOUND`, `STALE_REF`, and `AMBIGUOUS_TARGET`. See [Snapshots and refs](/desktop/snapshots-and-refs#how-a-ref-resolves).
+`--timeout-ms` accepts up to 86400000 ms; `0` expires immediately. A containing batch deadline still caps the operation. Longer deadlines retain the same identity checks and cannot make an ambiguous or incomplete ref usable.
+
+Errors specific to `get`: `INVALID_ARGS` for a bare ref, an unknown property, or an excessive timeout; `TIMEOUT` for an expired deadline or incomplete identity evidence; and the ref errors `SNAPSHOT_NOT_FOUND`, `STALE_REF`, and `AMBIGUOUS_TARGET`. See [Snapshots and refs](/desktop/snapshots-and-refs#how-a-ref-resolves).
 
 ## is
 
 Checks one boolean state of a ref.
 
 ```bash
-agent-desktop is <REF> [--property visible|enabled|checked|focused|expanded|selected]
+agent-desktop is <REF> [--property visible|enabled|checked|focused|expanded|selected] [--timeout-ms MS]
 ```
 
 <table>
@@ -151,6 +154,7 @@ agent-desktop is <REF> [--property visible|enabled|checked|focused|expanded|sele
   <tbody>
     <tr><td><code>REF</code></td><td>required</td><td>Qualified ref.</td></tr>
     <tr><td><code>--property</code></td><td><code>visible</code></td><td>The state to test.</td></tr>
+    <tr><td><code>--timeout-ms MS</code></td><td><code>5000</code> per stage</td><td>One shared deadline for ref resolution and all state reads when supplied. Uses the same limits as <code>get</code>; omission retains separate default deadlines.</td></tr>
   </tbody>
 </table>
 

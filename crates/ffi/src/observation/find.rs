@@ -5,8 +5,8 @@ use crate::ffi_try::trap_panic;
 use crate::types::{AdExactWindowInfo, AdFindQuery, AdFindSelectionKind, AdNativeHandle};
 use agent_desktop_core::{
     AdapterError, ContainmentPredicate, ErrorCode, IdentityPredicate, LocatorMaterialization,
-    LocatorQuery, LocatorResolveRequest, LocatorSelection, ObservationRoot, StatePredicate,
-    resolve_query,
+    LocatorQuery, LocatorResolveRequest, LocatorSelection, ObservationRequest, ObservationRoot,
+    StatePredicate, resolve_query,
 };
 use std::collections::HashSet;
 
@@ -173,7 +173,7 @@ pub(crate) unsafe fn decode_query(
         LocatorResolveRequest {
             selection,
             deadline,
-            max_raw_depth: 50,
+            max_raw_depth: ObservationRequest::MAX_RAW_DEPTH,
             surface: None,
             materialization: LocatorMaterialization::None,
         },

@@ -1,6 +1,6 @@
 use agent_desktop_core::{
     AdapterError, Deadline, ErrorCode, LocatorEvidence, LocatorField, LocatorStats,
-    ObservationRoot, ObservationSource, ObservedTree,
+    ObservationRequest, ObservationRoot, ObservationSource, ObservedTree,
 };
 use serde_json::json;
 
@@ -13,7 +13,7 @@ use crate::tree::properties::element_properties::ResolvedVocabulary;
 ///
 /// Matches core's own ceiling on `ObservationRequest::max_raw_depth`, so a
 /// request core accepts is never rejected here.
-pub const DEFAULT_MAX_RAW_DEPTH: u8 = 50;
+pub const DEFAULT_MAX_RAW_DEPTH: u8 = ObservationRequest::MAX_RAW_DEPTH;
 
 /// The longest sibling list one parent contributes.
 ///
@@ -222,3 +222,7 @@ mod tests;
 #[cfg(test)]
 #[path = "walker_failure_tests.rs"]
 mod failure_tests;
+
+#[cfg(test)]
+#[path = "walker_depth_tests.rs"]
+mod depth_tests;

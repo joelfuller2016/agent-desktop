@@ -66,7 +66,7 @@ fn recursive_query_clause_limit_is_bounded() {
 fn a_snapshot_depth_above_the_cap_names_the_limit_in_caller_terms() {
     let deadline = crate::Deadline::from_duration(std::time::Duration::from_secs(5)).unwrap();
     let too_deep = crate::TreeOptions {
-        max_depth: 51,
+        max_depth: ObservationRequest::MAX_RAW_DEPTH + 1,
         ..Default::default()
     };
     let error = ObservationRequest::snapshot(&too_deep, deadline)
@@ -75,7 +75,11 @@ fn a_snapshot_depth_above_the_cap_names_the_limit_in_caller_terms() {
     assert_eq!(error.code, ErrorCode::InvalidArgs);
     assert_eq!(
         error.message,
-        "max depth 51 exceeds the supported maximum of 50"
+        format!(
+            "max depth {} exceeds the supported maximum of {}",
+            ObservationRequest::MAX_RAW_DEPTH + 1,
+            ObservationRequest::MAX_RAW_DEPTH
+        )
     );
     assert!(
         error
@@ -84,7 +88,7 @@ fn a_snapshot_depth_above_the_cap_names_the_limit_in_caller_terms() {
             .is_some_and(|hint| hint.contains("--root"))
     );
     let deepest = crate::TreeOptions {
-        max_depth: 50,
+        max_depth: ObservationRequest::MAX_RAW_DEPTH,
         ..Default::default()
     };
     ObservationRequest::snapshot(&deepest, deadline)
@@ -94,11 +98,11 @@ fn a_snapshot_depth_above_the_cap_names_the_limit_in_caller_terms() {
 
 #[test]
 fn raw_depth_must_fit_native_safety_cap() {
-    for invalid in [0, 51] {
+    for invalid in [0, ObservationRequest::MAX_RAW_DEPTH + 1] {
         let error = validate_request(&request(invalid)).unwrap_err();
         assert_eq!(error.code, ErrorCode::InvalidArgs);
     }
-    validate_request(&request(50)).unwrap();
+    validate_request(&request(ObservationRequest::MAX_RAW_DEPTH)).unwrap();
 }
 
 #[test]

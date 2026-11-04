@@ -38,9 +38,11 @@ use std::io::ErrorKind;
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use windows_sys::Win32::Foundation::{
     ERROR_ACCESS_DENIED, ERROR_FILE_NOT_FOUND, ERROR_SHARING_VIOLATION,
+    ERROR_UNABLE_TO_REMOVE_REPLACED,
 };
 use windows_sys::Win32::Storage::FileSystem::{
     DELETE, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_DELETE,
@@ -53,6 +55,8 @@ const TEMP_LEASE_PREFIX: &str = ".agent-desktop-tmp-p";
 const LEASE_CREATE_ATTEMPTS: usize = 32;
 const TEMP_CREATE_ATTEMPTS: usize = 32;
 const MEASURED_REPLACE_FLAGS: u32 = 0;
+const REPLACE_ATTEMPTS: usize = 5;
+const REPLACE_RETRY_DELAY: Duration = Duration::from_millis(10);
 
 pub(super) struct TempDirLease {
     directory: PathBuf,
@@ -197,12 +201,34 @@ pub(super) fn promote_temp_to_destination(
     destination: &Path,
     temporary: &Path,
 ) -> std::io::Result<()> {
-    match replace_file_call(destination, temporary) {
+    match replace_file_with_retry(
+        || replace_file_call(destination, temporary),
+        std::thread::sleep,
+    ) {
         Ok(()) => Ok(()),
         Err(error) if error.raw_os_error() == Some(ERROR_FILE_NOT_FOUND as i32) => {
             std::fs::rename(temporary, destination)
         }
         Err(error) => Err(annotate_replace_failure(error)),
+    }
+}
+
+fn replace_file_with_retry(
+    mut operation: impl FnMut() -> std::io::Result<()>,
+    mut pause: impl FnMut(Duration),
+) -> std::io::Result<()> {
+    let mut attempts = 1;
+    loop {
+        match operation() {
+            Err(error)
+                if error.raw_os_error() == Some(ERROR_UNABLE_TO_REMOVE_REPLACED as i32)
+                    && attempts < REPLACE_ATTEMPTS =>
+            {
+                attempts += 1;
+                pause(REPLACE_RETRY_DELAY);
+            }
+            result => return result,
+        }
     }
 }
 
@@ -260,3 +286,7 @@ pub(super) fn to_wide_null(path: &Path) -> std::io::Result<Vec<u16>> {
     wide.push(0);
     Ok(wide)
 }
+
+#[cfg(test)]
+#[path = "replace_retry_tests.rs"]
+mod tests;

@@ -18,7 +18,7 @@ use serde_json::{Value, json};
 use std::time::Duration;
 
 const LOCATOR_TIMEOUT: Duration = Duration::from_secs(5);
-const MAX_RAW_DEPTH: u8 = 50;
+const MAX_RAW_DEPTH: u8 = ObservationRequest::MAX_RAW_DEPTH;
 
 /// The traversal budget: the caller's if they set one, the shipped default
 /// otherwise. Named rather than inlined so a test exercises the same

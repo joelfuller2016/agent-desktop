@@ -374,7 +374,7 @@ fn a_tokenless_drill_refuses_a_depth_no_walk_supports() {
     let (anchor_ref, _) = tokenless::named(&captured.refmap, "Sidebar");
     let snapshot_id = tokenless::save(&captured.refmap);
     let too_deep = TreeOptions {
-        max_depth: 51,
+        max_depth: crate::ObservationRequest::MAX_RAW_DEPTH + 1,
         ..drill_opts()
     };
     let walks_before = adapter.captures();

@@ -1,7 +1,7 @@
 use crate::{
     AppError,
     adapter::{PlatformAdapter, optional_live_read},
-    commands::helpers::resolve_ref_with_context,
+    commands::helpers::{resolve_ref_with_context, resolve_ref_within_deadline},
     context::CommandContext,
 };
 use serde_json::{Value, json};
@@ -25,8 +25,39 @@ pub fn execute(
     adapter: &dyn PlatformAdapter,
     context: &CommandContext,
 ) -> Result<Value, AppError> {
-    let (entry, handle) = resolve_ref_with_context(&args.ref_id, adapter, context)?;
-    let deadline = crate::Deadline::standard()?;
+    execute_with_deadline(args, None, adapter, context)
+}
+
+pub fn execute_with_timeout(
+    args: GetArgs,
+    timeout_ms: u64,
+    adapter: &dyn PlatformAdapter,
+    context: &CommandContext,
+) -> Result<Value, AppError> {
+    execute_with_deadline(
+        args,
+        Some(crate::Deadline::after(timeout_ms)?),
+        adapter,
+        context,
+    )
+}
+
+fn execute_with_deadline(
+    args: GetArgs,
+    explicit_deadline: Option<crate::Deadline>,
+    adapter: &dyn PlatformAdapter,
+    context: &CommandContext,
+) -> Result<Value, AppError> {
+    let (entry, handle) = match explicit_deadline {
+        Some(deadline) => resolve_ref_within_deadline(&args.ref_id, deadline, adapter, context)?,
+        None => resolve_ref_with_context(&args.ref_id, adapter, context)?,
+    };
+    let deadline = explicit_deadline.map_or_else(crate::Deadline::standard, Ok)?;
+    let ensure_remaining = || match explicit_deadline {
+        Some(deadline) => deadline.ensure_remaining(),
+        None => Ok(()),
+    };
+    ensure_remaining()?;
 
     let (prop_name, value, bounds_live) = match args.property {
         GetProperty::Role => ("role", json!(entry.identity.role), None),
@@ -65,6 +96,7 @@ pub fn execute(
             )
         }
     };
+    ensure_remaining()?;
 
     let mut response = json!({ "property": prop_name, "ref": args.ref_id, "value": value });
     if let Some(live) = bounds_live {
@@ -76,3 +108,7 @@ pub fn execute(
 #[cfg(test)]
 #[path = "get_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "read_timeout_tests.rs"]
+mod timeout_tests;

@@ -71,6 +71,77 @@ fn a_twin_below_the_skeleton_depth_is_not_offered_as_an_anchor() {
 }
 
 #[test]
+fn a_twin_below_fifty_levels_still_invalidates_capture_uniqueness() {
+    let _guard = HomeGuard::new();
+    let mut hidden = node("group", "Sidebar");
+    hidden.children = vec![node("button", "Twin")];
+    for _ in 0..76 {
+        hidden = group(vec![hidden]);
+    }
+    let mut sidebar = node("group", "Sidebar");
+    sidebar.children = vec![hidden];
+    let mut toolbar = node("group", "Toolbar");
+    toolbar.children = vec![node("button", "Open")];
+    let adapter = CaptureAdapter::new(window(vec![group(vec![group(vec![sidebar, toolbar])])]));
+
+    let captured = snapshot(&adapter);
+
+    assert!(captured.complete);
+    assert_eq!(captured.refmap.len(), 1);
+    let (_, toolbar) = named(&captured.refmap, "Toolbar");
+    assert!(toolbar.identity.unique_at_capture);
+    resolve(&adapter, toolbar).expect("the unrelated unique anchor resolves");
+    assert_eq!(adapter.anchored().len(), 1);
+}
+
+#[test]
+fn capture_beyond_the_native_bound_does_not_offer_a_drill_anchor() {
+    let _guard = HomeGuard::new();
+    let mut hidden = node("button", "Deep control");
+    for _ in 0..crate::ObservationRequest::MAX_RAW_DEPTH {
+        hidden = group(vec![hidden]);
+    }
+    let mut sidebar = node("group", "Sidebar");
+    sidebar.children = vec![hidden];
+    let adapter = CaptureAdapter::new(window(vec![group(vec![group(vec![sidebar])])]));
+
+    let captured = snapshot(&adapter);
+
+    assert!(captured.identity_unproven.is_some());
+    assert!(captured.refmap.is_empty());
+}
+
+#[test]
+fn a_unique_control_below_fifty_levels_resolves_after_capture() {
+    let _guard = HomeGuard::new();
+    let mut deep = node("button", "Deep control");
+    for _ in 0..80 {
+        deep = group(vec![deep]);
+    }
+    let adapter = CaptureAdapter::new(window(vec![deep]));
+    let options = crate::TreeOptions {
+        max_depth: crate::ObservationRequest::MAX_RAW_DEPTH,
+        ..Default::default()
+    };
+
+    let captured = crate::snapshot::build(
+        &adapter,
+        &options,
+        Some("Fixture"),
+        None,
+        crate::Deadline::standard().unwrap(),
+    )
+    .expect("the deep window snapshots");
+
+    assert!(captured.complete);
+    assert!(captured.identity_unproven.is_none());
+    let (_, button) = named(&captured.refmap, "Deep control");
+    assert!(button.identity.unique_at_capture);
+    resolve(&adapter, button).expect("the deep ref resolves");
+    assert_eq!(adapter.anchored()[0].scope.path.len(), 81);
+}
+
+#[test]
 fn a_drill_under_a_moved_root_records_the_live_path() {
     let _guard = HomeGuard::new();
     let adapter = CaptureAdapter::new(anchored_window());

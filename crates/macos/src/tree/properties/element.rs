@@ -1,4 +1,4 @@
-pub const ABSOLUTE_MAX_DEPTH: u8 = 50;
+pub const ABSOLUTE_MAX_DEPTH: u8 = agent_desktop_core::ObservationRequest::MAX_RAW_DEPTH;
 
 pub(crate) fn child_attributes(ax_role: Option<&str>) -> &'static [&'static str] {
     if ax_role == Some("AXBrowser") {

@@ -5,7 +5,7 @@
 //! predicate (`agent_desktop_core::refs::resolve_saved_ref`), which owns
 //! identity for every platform.
 
-use agent_desktop_core::{Deadline, RefEntry};
+use agent_desktop_core::{Deadline, ObservationRequest, RefEntry};
 
 use crate::tree::walk::walker::{DEFAULT_MAX_SIBLINGS, WalkBudget};
 
@@ -14,11 +14,9 @@ pub(crate) mod descent;
 
 /// The resolve-scoped depth cap.
 ///
-/// Independently bounded from the walk's own ceiling, and at least as deep as
-/// core's whole-window observation, so every node a capture can count is one
-/// the anchor can land. Electron elements commonly sit at depth 25+, so the cap
-/// is the resolution bound rather than the walk bound.
-pub(crate) const MAX_RESOLVE_DEPTH: u8 = 50;
+/// Matches the whole-window observation ceiling, so every node a capture can
+/// count is one the anchor can land.
+pub(crate) const MAX_RESOLVE_DEPTH: u8 = ObservationRequest::MAX_RAW_DEPTH;
 
 /// The budget a resolution attempt enumerates under.
 ///

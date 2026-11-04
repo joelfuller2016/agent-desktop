@@ -4,8 +4,8 @@ use crate::{
     commands::{query, snapshot as snapshot_cmd, wait_timeout},
     context::CommandContext,
     locator::live_locator::{
-        LocatorMaterialization, LocatorResolveRequest, LocatorSelection, ObservationRoot,
-        resolve_query,
+        LocatorMaterialization, LocatorResolveRequest, LocatorSelection, ObservationRequest,
+        ObservationRoot, resolve_query,
     },
     refs::refs_store::RefStore,
     snapshot::{self, emit_snapshot_saved},
@@ -197,7 +197,7 @@ fn observe_selector(
         &LocatorResolveRequest {
             selection: LocatorSelection::First,
             deadline,
-            max_raw_depth: 50,
+            max_raw_depth: ObservationRequest::MAX_RAW_DEPTH,
             surface: (input.opts.surface != crate::SnapshotSurface::Window)
                 .then_some(input.opts.surface),
             materialization: LocatorMaterialization::None,

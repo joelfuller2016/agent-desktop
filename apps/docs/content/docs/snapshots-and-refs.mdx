@@ -79,7 +79,7 @@ A node always carries `role` and, when they exist, `ref_id`, `name`, `value`, `d
 
 - `-i` (`--interactive-only`) drops leaves that have no ref. It keeps nodes that lead to refs and nodes marked with `children_count`. Static text has no ref, so a row's label is dropped: to see which row a repeated button belongs to, drill that row's container with `--root` and leave out `-i`.
 - `--compact` collapses a single-child wrapper that has no name, value, description, id, state, or action.
-- `--max-depth` limits depth. The default is 10 and the maximum is 50.
+- `--max-depth` limits depth. The default is 10 and the maximum is 128.
 
 ## Choose the window
 

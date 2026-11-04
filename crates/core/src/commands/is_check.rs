@@ -1,7 +1,7 @@
 use crate::{
     AppError, Rect,
     adapter::{PlatformAdapter, optional_live_read},
-    commands::helpers::resolve_ref_with_context,
+    commands::helpers::{resolve_ref_with_context, resolve_ref_within_deadline},
     context::CommandContext,
     refs::RefEntry,
     tree::element_state::ElementState,
@@ -28,7 +28,33 @@ pub fn execute(
     adapter: &dyn PlatformAdapter,
     context: &CommandContext,
 ) -> Result<Value, AppError> {
-    let (entry, handle) = resolve_ref_with_context(&args.ref_id, adapter, context)?;
+    execute_with_deadline(args, None, adapter, context)
+}
+
+pub fn execute_with_timeout(
+    args: IsArgs,
+    timeout_ms: u64,
+    adapter: &dyn PlatformAdapter,
+    context: &CommandContext,
+) -> Result<Value, AppError> {
+    execute_with_deadline(
+        args,
+        Some(crate::Deadline::after(timeout_ms)?),
+        adapter,
+        context,
+    )
+}
+
+fn execute_with_deadline(
+    args: IsArgs,
+    explicit_deadline: Option<crate::Deadline>,
+    adapter: &dyn PlatformAdapter,
+    context: &CommandContext,
+) -> Result<Value, AppError> {
+    let (entry, handle) = match explicit_deadline {
+        Some(deadline) => resolve_ref_within_deadline(&args.ref_id, deadline, adapter, context)?,
+        None => resolve_ref_with_context(&args.ref_id, adapter, context)?,
+    };
 
     let prop_name = match args.property {
         IsProperty::Visible => "visible",
@@ -39,8 +65,14 @@ pub fn execute(
         IsProperty::Selected => "selected",
     };
 
-    let deadline = crate::Deadline::standard()?;
+    let deadline = explicit_deadline.map_or_else(crate::Deadline::standard, Ok)?;
+    let ensure_remaining = || match explicit_deadline {
+        Some(deadline) => deadline.ensure_remaining(),
+        None => Ok(()),
+    };
+    ensure_remaining()?;
     let live_state = optional_live_read(adapter.get_live_state(&handle, deadline))?;
+    ensure_remaining()?;
     let state = live_state
         .clone()
         .unwrap_or_else(|| state_from_ref_entry(&entry));
@@ -48,7 +80,9 @@ pub fn execute(
 
     let (applicable, result) = match args.property {
         IsProperty::Visible => {
+            ensure_remaining()?;
             let live_bounds = optional_live_read(adapter.get_element_bounds(&handle, deadline))?;
+            ensure_remaining()?;
             if let Some(visible) = visible_without_bounds(live_bounds, live_state.as_ref()) {
                 return Ok(visible_answer(&args.ref_id, visible));
             }
@@ -85,6 +119,7 @@ pub fn execute(
         ),
         IsProperty::Selected => (true, state::has_state(&state.states, SELECTED)),
     };
+    ensure_remaining()?;
 
     Ok(
         json!({ "property": prop_name, "ref": args.ref_id, "result": result, "applicable": applicable }),

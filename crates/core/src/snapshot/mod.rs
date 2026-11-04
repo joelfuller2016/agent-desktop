@@ -25,21 +25,6 @@ pub struct SnapshotResult {
     pub identity_unproven: Option<String>,
 }
 
-impl SnapshotResult {
-    pub(crate) fn save_refmap(&self, store: &RefStore) -> Result<String, AppError> {
-        if self.complete {
-            store.save_new_snapshot(&self.refmap)
-        } else {
-            store.save_new_snapshot_detached(&self.refmap)
-        }
-    }
-
-    pub(crate) fn bind_snapshot_id(&mut self, snapshot_id: String) {
-        crate::refs::ref_token::qualify_tree_refs(&mut self.tree, &snapshot_id);
-        self.snapshot_id = Some(snapshot_id);
-    }
-}
-
 pub fn build(
     adapter: &dyn PlatformAdapter,
     opts: &TreeOptions,
@@ -381,6 +366,7 @@ pub(crate) fn emit_snapshot_saved(
 
 pub mod hints;
 pub mod snapshot_ref;
+mod snapshot_result;
 pub mod snapshot_surface;
 #[cfg(test)]
 #[path = "snapshot_tests.rs"]

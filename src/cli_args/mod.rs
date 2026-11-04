@@ -258,6 +258,13 @@ pub(crate) struct GetArgs {
     )]
     #[serde(default = "default_get_property")]
     pub property: String,
+    #[arg(
+        long = "timeout-ms",
+        value_name = "MS",
+        help = "Shared ref-resolution and property-read deadline in milliseconds; omitted preserves the default 5000 ms per stage"
+    )]
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
 }
 
 #[derive(Parser, Debug, Deserialize)]
@@ -275,6 +282,13 @@ pub(crate) struct IsArgs {
     )]
     #[serde(default = "default_is_property")]
     pub property: String,
+    #[arg(
+        long = "timeout-ms",
+        value_name = "MS",
+        help = "Shared ref-resolution and state-read deadline in milliseconds; omitted preserves the default 5000 ms per stage"
+    )]
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
 }
 
 #[derive(Parser, Debug, Deserialize)]
@@ -308,3 +322,7 @@ pub(crate) struct ListSurfacesArgs {
 #[cfg(test)]
 #[path = "mod_tests.rs"]
 mod mod_tests;
+
+#[cfg(test)]
+#[path = "read_timeout_tests.rs"]
+mod read_timeout_tests;

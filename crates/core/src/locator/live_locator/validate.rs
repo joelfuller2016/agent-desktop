@@ -1,8 +1,8 @@
-use super::LocatorResolveRequest;
+use super::{LocatorResolveRequest, ObservationRequest};
 use crate::{AdapterError, ErrorCode, locator::LocatorQuery};
 
 const MAX_QUERY_CLAUSES: usize = 64;
-const MAX_RAW_DEPTH: u8 = 50;
+const MAX_RAW_DEPTH: u8 = ObservationRequest::MAX_RAW_DEPTH;
 const MAX_QUERY_FIELD_BYTES: usize = 4_096;
 const MAX_QUERY_TOTAL_BYTES: usize = 65_536;
 

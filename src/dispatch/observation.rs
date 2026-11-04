@@ -95,14 +95,16 @@ pub(super) fn get(
     adapter: &dyn PlatformAdapter,
     context: &CommandContext,
 ) -> Result<Value, AppError> {
-    get_command::execute(
-        get_command::GetArgs {
-            ref_id: args.ref_id,
-            property: parse_get_property(&args.property)?,
-        },
-        adapter,
-        context,
-    )
+    let core_args = get_command::GetArgs {
+        ref_id: args.ref_id,
+        property: parse_get_property(&args.property)?,
+    };
+    match args.timeout_ms {
+        Some(timeout_ms) => {
+            get_command::execute_with_timeout(core_args, timeout_ms, adapter, context)
+        }
+        None => get_command::execute(core_args, adapter, context),
+    }
 }
 
 pub(super) fn is(
@@ -110,12 +112,14 @@ pub(super) fn is(
     adapter: &dyn PlatformAdapter,
     context: &CommandContext,
 ) -> Result<Value, AppError> {
-    is_command::execute(
-        is_command::IsArgs {
-            ref_id: args.ref_id,
-            property: parse_is_property(&args.property)?,
-        },
-        adapter,
-        context,
-    )
+    let core_args = is_command::IsArgs {
+        ref_id: args.ref_id,
+        property: parse_is_property(&args.property)?,
+    };
+    match args.timeout_ms {
+        Some(timeout_ms) => {
+            is_command::execute_with_timeout(core_args, timeout_ms, adapter, context)
+        }
+        None => is_command::execute(core_args, adapter, context),
+    }
 }

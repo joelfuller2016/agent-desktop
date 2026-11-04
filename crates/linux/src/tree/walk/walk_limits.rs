@@ -1,6 +1,6 @@
 use agent_desktop_core::ObservationRequest;
 
-const DEFAULT_MAX_RAW_DEPTH: usize = 50;
+const DEFAULT_MAX_RAW_DEPTH: usize = ObservationRequest::MAX_RAW_DEPTH as usize;
 const DEFAULT_MAX_NODES: usize = 10_000;
 const DEFAULT_MAX_EDGES: usize = 100_000;
 const DEFAULT_MAX_CHILDREN: usize = 4_096;

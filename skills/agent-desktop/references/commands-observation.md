@@ -103,9 +103,13 @@ Reads one property of a ref: `text` (default), `value`, `title`, `bounds`, `role
 - `text`, `value`, `bounds` and `states` read live state when the adapter can. A missing live value or bounds returns `null`. When an optional live read is unavailable, `get` can fall back to the saved ref entry's value, name, bounds or states.
 - Only `bounds` reports whether it is live, in `data.live`. When it is `false`, the rectangle came from the snapshot and may be out of date. Check it before you pass bounds to `mouse-click`.
 
+For a large window, pass `--timeout-ms 15000` to give ref resolution and the property read one shared deadline. Omitted, each stage keeps its 5000 ms default. A longer deadline still requires complete identity evidence; it does not make an ambiguous ref usable. The existing maximum is 86400000 ms, `0` expires immediately, and a containing batch deadline still applies.
+
 ## is
 
 Checks one boolean: `visible` (default), `enabled`, `checked`, `focused`, `expanded`, `selected`. Output: `{ "ref", "property", "result" }`. For `enabled`, an unknown native value returns `result: false` with `applicable: false`. That means unknown, not disabled.
+
+`--timeout-ms` has the same shared-deadline behavior and limits as `get`, including ref resolution and all state reads. Omitted, resolution and state reading retain separate 5000 ms defaults.
 
 ## screenshot
 

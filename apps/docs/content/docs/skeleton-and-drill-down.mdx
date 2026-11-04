@@ -272,13 +272,13 @@ It does not change the snapshot of the root ref you searched. `find --count` sav
 
 ## Depth with max-depth
 
-`--max-depth` limits how many levels `snapshot` reads. The default is 10, and the largest accepted value is 50:
+`--max-depth` limits how many levels `snapshot` reads. The default is 10, and the largest accepted value is 128:
 
 ```json
 {
   "code": "INVALID_ARGS",
-  "message": "max depth 60 exceeds the supported maximum of 50",
-  "suggestion": "Use a max depth of 50 or less, or drill into a subtree with snapshot --root <ref>"
+  "message": "max depth 129 exceeds the supported maximum of 128",
+  "suggestion": "Use a max depth of 128 or less, or drill into a subtree with snapshot --root <ref>"
 }
 ```
 

@@ -44,7 +44,7 @@ pub(crate) fn resolve_ref_with_context(
 }
 
 /// Resolves a saved ref under the caller deadline and records resolution traces.
-fn resolve_ref_within_deadline(
+pub(crate) fn resolve_ref_within_deadline(
     ref_id: &str,
     deadline: crate::Deadline,
     adapter: &dyn PlatformAdapter,

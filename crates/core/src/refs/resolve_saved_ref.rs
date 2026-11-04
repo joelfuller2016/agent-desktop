@@ -15,7 +15,7 @@ use crate::{
 /// The depth a whole-window observation reaches: the limit a snapshot walk
 /// supports, so a ref taken from the deepest snapshot node is inside the scope
 /// it is captured from and resolved against.
-pub(crate) const WHOLE_WINDOW_DEPTH: u8 = 50;
+pub(crate) const WHOLE_WINDOW_DEPTH: u8 = ObservationRequest::MAX_RAW_DEPTH;
 
 /// Resolves a saved ref under the reviewed identity rule.
 ///

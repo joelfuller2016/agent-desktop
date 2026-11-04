@@ -39,12 +39,18 @@ pub struct ObservationMode {
 }
 
 impl ObservationRequest {
+    /// The finite native traversal ceiling shared by observation and ref resolution.
+    pub const MAX_RAW_DEPTH: u8 = 128;
+
     pub fn validate(self) -> Result<Self, AdapterError> {
         self.budget.validate()?;
-        if !(1..=50).contains(&self.max_raw_depth) {
+        if !(1..=Self::MAX_RAW_DEPTH).contains(&self.max_raw_depth) {
             return Err(AdapterError::new(
                 ErrorCode::InvalidArgs,
-                "max_raw_depth must be between 1 and 50",
+                format!(
+                    "max_raw_depth must be between 1 and {}",
+                    Self::MAX_RAW_DEPTH
+                ),
             ));
         }
         if self.max_logical_depth > self.max_raw_depth {
@@ -73,7 +79,7 @@ impl ObservationRequest {
     pub fn snapshot(options: &TreeOptions, deadline: Deadline) -> Self {
         Self {
             deadline,
-            max_raw_depth: 50,
+            max_raw_depth: Self::MAX_RAW_DEPTH,
             max_logical_depth: Self::snapshot_logical_depth(options),
             surface: options.surface,
             evidence_plan: EvidencePlan::uniform(EvidenceRequirements::snapshot()),
